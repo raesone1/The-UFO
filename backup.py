@@ -131,6 +131,19 @@ def reset_game():
     bird.speed = 0  # Reset bird speed to 0
     bird.rect[1] = SCREEN_HEIGHT / 2  # Reset bird position to the center
 
+# Fungsi untuk membaca skor tertinggi dari file
+def read_high_score():
+    try:
+        with open('highscore.txt', 'r') as file:
+            return int(file.read())
+    except FileNotFoundError:
+        return 0  # Jika file tidak ada, skor tertinggi adalah 0
+
+# Fungsi untuk menyimpan skor tertinggi ke file
+def save_high_score(score):
+    with open('highscore.txt', 'w') as file:
+        file.write(str(score))
+
 pygame.init()
 screen = pygame.display.set_mode((SCREEN_WIDHT, SCREEN_HEIGHT))
 pygame.display.set_caption('The UFO By radjaa')
@@ -159,6 +172,9 @@ for i in range(2):
 # Score initialization
 score = 0
 font = pygame.font.SysFont('Arial', 30)
+
+# Membaca skor tertinggi
+high_score = read_high_score()
 
 clock = pygame.time.Clock()
 
@@ -224,6 +240,10 @@ while True:
         score_text = font.render(f"Score: {int(score)}", True, (255, 255, 255))
         screen.blit(score_text, (10, 10))
 
+        # Menampilkan skor tertinggi di layar
+        high_score_text = font.render(f"High Score: {int(high_score)}", True, (255, 255, 255))
+        screen.blit(high_score_text, (SCREEN_WIDHT - high_score_text.get_width() - 10, 10))
+
         if is_off_screen(ground_group.sprites()[0]):
             ground_group.remove(ground_group.sprites()[0])
 
@@ -256,6 +276,11 @@ while True:
             pygame.mixer.music.play()
             time.sleep(1)
             game_over = True
+
+            # Periksa jika skor lebih tinggi dari high score
+            if score > high_score:
+                high_score = score
+                save_high_score(high_score)  # Simpan skor tertinggi
 
     else:
         screen.blit(GAME_OVER_IMAGE, (SCREEN_WIDHT / 2 - GAME_OVER_IMAGE.get_width() / 2, SCREEN_HEIGHT / 2 - GAME_OVER_IMAGE.get_height() / 2))
