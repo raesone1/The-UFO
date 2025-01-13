@@ -19,6 +19,8 @@ PIPE_GAP = 150
 wing = 'assets/audio/wing.wav'
 hit = 'assets/audio/hit.wav'
 
+game_over_image_path = 'assets/sprites/gameover.png'
+
 pygame.mixer.init()
 
 class Bird(pygame.sprite.Sprite):
@@ -100,13 +102,34 @@ class Ground(pygame.sprite.Sprite):
         self.rect[0] -= GAME_SPEED
 
 def is_off_screen(sprite):
-    return sprite.rect[0] < -(sprite.rect[2])
+    return sprite.rect[0] < -(sprite.rect[2])  # Check if the object is off screen
 
 def get_random_pipes(xpos):
     size = random.randint(100, 300)
     pipe = Pipe(False, xpos, size)
     pipe_inverted = Pipe(True, xpos, SCREEN_HEIGHT - size - PIPE_GAP)
     return pipe, pipe_inverted
+
+def reset_game():
+    global bird_group, ground_group, pipe_group, score, bird
+    bird_group = pygame.sprite.Group()
+    bird = Bird()
+    bird_group.add(bird)
+
+    ground_group = pygame.sprite.Group()
+    for i in range(2):
+        ground = Ground(GROUND_WIDHT * i)
+        ground_group.add(ground)
+
+    pipe_group = pygame.sprite.Group()
+    for i in range(2):
+        pipes = get_random_pipes(SCREEN_WIDHT * i + 800)
+        pipe_group.add(pipes[0])
+        pipe_group.add(pipes[1])
+
+    score = 0
+    bird.speed = 0  # Reset bird speed to 0
+    bird.rect[1] = SCREEN_HEIGHT / 2  # Reset bird position to the center
 
 pygame.init()
 screen = pygame.display.set_mode((SCREEN_WIDHT, SCREEN_HEIGHT))
@@ -115,6 +138,7 @@ pygame.display.set_caption('The UFO By radjaa')
 BACKGROUND = pygame.image.load('assets/sprites/background-day.png')
 BACKGROUND = pygame.transform.scale(BACKGROUND, (SCREEN_WIDHT, SCREEN_HEIGHT))
 BEGIN_IMAGE = pygame.image.load('assets/sprites/message.png').convert_alpha()
+GAME_OVER_IMAGE = pygame.image.load(game_over_image_path).convert_alpha()
 
 bird_group = pygame.sprite.Group()
 bird = Bird()
@@ -170,6 +194,7 @@ while begin:
 
     pygame.display.update()
 
+game_over = False
 while True:
     clock.tick(15)
 
@@ -177,49 +202,61 @@ while True:
         if event.type == QUIT:
             pygame.quit()
         if event.type == KEYDOWN:
-            if event.key == K_SPACE or event.key == K_UP:
+            if game_over and event.key == K_SPACE:
+                reset_game()
+                bird.speed = 0  # Reset speed to 0 so it doesn't immediately fall
+                bird.rect[1] = SCREEN_HEIGHT / 2  # Set bird back to the middle of the screen
+                game_over = False
+                bird.bump()  # Optionally, this can be kept to make the bird jump immediately
+            elif not game_over and (event.key == K_SPACE or event.key == K_UP):
                 bird.bump()
                 pygame.mixer.music.load(wing)
                 pygame.mixer.music.play()
 
-    screen.blit(BACKGROUND, (0, 0))
+    if not game_over:
+        screen.blit(BACKGROUND, (0, 0))
 
-    for pipe in pipe_group.sprites():
-        if pipe.rect[0] + PIPE_WIDHT < bird.rect[0] and not pipe.passed:
-            score += 0.5
-            pipe.passed = True
+        for pipe in pipe_group.sprites():
+            if pipe.rect[0] + PIPE_WIDHT < bird.rect[0] and not pipe.passed:
+                score += 0.5
+                pipe.passed = True
 
-    score_text = font.render(f"Score: {int(score)}", True, (255, 255, 255))
-    screen.blit(score_text, (10, 10))
+        score_text = font.render(f"Score: {int(score)}", True, (255, 255, 255))
+        screen.blit(score_text, (10, 10))
 
-    if is_off_screen(ground_group.sprites()[0]):
-        ground_group.remove(ground_group.sprites()[0])
+        if is_off_screen(ground_group.sprites()[0]):
+            ground_group.remove(ground_group.sprites()[0])
 
-        new_ground = Ground(GROUND_WIDHT - 20)
-        ground_group.add(new_ground)
+            new_ground = Ground(GROUND_WIDHT - 20)
+            ground_group.add(new_ground)
 
-    if is_off_screen(pipe_group.sprites()[0]):
-        pipe_group.remove(pipe_group.sprites()[0])
-        pipe_group.remove(pipe_group.sprites()[0])
+        if is_off_screen(pipe_group.sprites()[0]):
+            pipe_group.remove(pipe_group.sprites()[0])
+            pipe_group.remove(pipe_group.sprites()[0])
 
-        pipes = get_random_pipes(SCREEN_WIDHT * 2)
+            pipes = get_random_pipes(SCREEN_WIDHT * 2)
 
-        pipe_group.add(pipes[0])
-        pipe_group.add(pipes[1])
+            pipe_group.add(pipes[0])
+            pipe_group.add(pipes[1])
 
-    bird_group.update()
-    ground_group.update()
-    pipe_group.update()
+        bird_group.update()
+        ground_group.update()
+        pipe_group.update()
 
-    bird_group.draw(screen)
-    pipe_group.draw(screen)
-    ground_group.draw(screen)
+        bird_group.draw(screen)
+        pipe_group.draw(screen)
+        ground_group.draw(screen)
 
-    pygame.display.update()
+        pygame.display.update()
 
-    if (pygame.sprite.groupcollide(bird_group, ground_group, False, False, pygame.sprite.collide_mask) or
-            pygame.sprite.groupcollide(bird_group, pipe_group, False, False, pygame.sprite.collide_mask)):
-        pygame.mixer.music.load(hit)
-        pygame.mixer.music.play()
-        time.sleep(1)
-        break
+        # Check for collisions
+        if (pygame.sprite.groupcollide(bird_group, ground_group, False, False, pygame.sprite.collide_mask) or
+                pygame.sprite.groupcollide(bird_group, pipe_group, False, False, pygame.sprite.collide_mask)):
+            pygame.mixer.music.load(hit)
+            pygame.mixer.music.play()
+            time.sleep(1)
+            game_over = True
+
+    else:
+        screen.blit(GAME_OVER_IMAGE, (SCREEN_WIDHT / 2 - GAME_OVER_IMAGE.get_width() / 2, SCREEN_HEIGHT / 2 - GAME_OVER_IMAGE.get_height() / 2))
+        pygame.display.update()
