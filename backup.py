@@ -4,7 +4,7 @@ from pygame.locals import *
 # VARIABLES
 SCREEN_WIDHT = 430
 SCREEN_HEIGHT = 600
-SPEED = 20
+SPEED = 15 #standarnya 20
 GRAVITY = 2.5
 GAME_SPEED = 15
 
@@ -131,6 +131,20 @@ def reset_game():
     bird.speed = 0  # Reset bird speed to 0
     bird.rect[1] = SCREEN_HEIGHT / 2  # Reset bird position to the center
 
+# Memuat dan memutar backsound (suara latar)
+background_sound = pygame.mixer.Sound('assets/audio/background_ambient.wav')
+background_sound.set_volume(0.2)  # Sesuaikan volume backsound
+
+# Mengubah volume untuk suara 'wing' dan 'hit'
+wing_sound = pygame.mixer.Sound(wing)
+wing_sound.set_volume(0.3)  # Mengatur volume menjadi 50%
+
+hit_sound = pygame.mixer.Sound(hit)
+hit_sound.set_volume(0.3)  # Mengatur volume menjadi 50%
+
+# Memutar suara latar
+background_sound.play(loops=-1, maxtime=0)  # -1 berarti suara akan berulang terus-menerus
+
 # Fungsi untuk membaca skor tertinggi dari file
 def read_high_score():
     try:
@@ -171,7 +185,7 @@ for i in range(2):
 
 # Score initialization
 score = 0
-font = pygame.font.SysFont('Arial', 30)
+font = pygame.font.SysFont('SuperMario256.ttf', 30)
 
 # Membaca skor tertinggi
 high_score = read_high_score()
@@ -189,8 +203,7 @@ while begin:
         if event.type == KEYDOWN:
             if event.key == K_SPACE or event.key == K_UP:
                 bird.bump()
-                pygame.mixer.music.load(wing)
-                pygame.mixer.music.play()
+                wing_sound.play()  # Gunakan suara wing dengan volume yang sudah disesuaikan
                 begin = False
 
     screen.blit(BACKGROUND, (0, 0))
@@ -212,7 +225,7 @@ while begin:
 
 game_over = False
 while True:
-    clock.tick(15)
+    clock.tick(25)
 
     for event in pygame.event.get():
         if event.type == QUIT:
@@ -226,8 +239,7 @@ while True:
                 bird.bump()  # Optionally, this can be kept to make the bird jump immediately
             elif not game_over and (event.key == K_SPACE or event.key == K_UP):
                 bird.bump()
-                pygame.mixer.music.load(wing)
-                pygame.mixer.music.play()
+                wing_sound.play()  # Gunakan suara wing dengan volume yang sudah disesuaikan
 
     if not game_over:
         screen.blit(BACKGROUND, (0, 0))
@@ -272,8 +284,7 @@ while True:
         # Check for collisions
         if (pygame.sprite.groupcollide(bird_group, ground_group, False, False, pygame.sprite.collide_mask) or
                 pygame.sprite.groupcollide(bird_group, pipe_group, False, False, pygame.sprite.collide_mask)):
-            pygame.mixer.music.load(hit)
-            pygame.mixer.music.play()
+            hit_sound.play()  # Gunakan suara hit dengan volume yang sudah disesuaikan
             time.sleep(1)
             game_over = True
 
